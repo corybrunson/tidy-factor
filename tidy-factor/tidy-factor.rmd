@@ -1,0 +1,25 @@
+---
+title: "Code for Tidy Matrix Decomposition Slideshow"
+author: "Jason Cory Brunson"
+date: "`r Sys.Date()`"
+output:
+  slidy_presentation:
+    font_adjustment: -2
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Pitch
+
+## Principal components analysis: Anderson iris data
+
+```{r}
+pca <- prcomp(iris[, 1:4])
+summary(pca)
+biplot(pca, scale = 0, col = c("black", "forestgreen"),
+       main = "PCA of iris data")
+```
+
+## correspondence analysis

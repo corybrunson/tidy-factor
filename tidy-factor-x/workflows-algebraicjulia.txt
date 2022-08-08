@@ -1,0 +1,143 @@
+# https://algebraicjulia.github.io/Catlab.jl/dev/generated/wiring_diagrams/wiring_diagram_basics/
+
+# fresh session
+
+using Catlab, Catlab.Theories
+using Catlab.CategoricalAlgebra
+using Catlab.WiringDiagrams
+using Catlab.Programs
+using Catlab.Graphics
+using Catlab.Graphics: Graphviz
+
+draw_all(d::WiringDiagram) = to_graphviz(d,
+  orientation=LeftToRight,
+  labels=true, label_attr=:label,
+  node_attrs=Graphviz.Attributes(
+    :fontname => "Courier",
+  ),
+  edge_attrs=Graphviz.Attributes(
+    :fontname => "Arial",
+  )
+)
+
+draw_nodes(d::WiringDiagram) = to_graphviz(d,
+  orientation=LeftToRight,
+  labels=false, label_attr=:label,
+  node_attrs=Graphviz.Attributes(
+    :fontname => "Courier",
+  )
+)
+
+# typical base R workflow
+
+@present base(FreeSymmetricMonoidalCategory) begin
+  (scalar, list, matrix, data, object, console, device)::Ob
+  model::Hom(data ⊗ list, object)
+  dollar::Hom(object, matrix)
+  print::Hom(object, console)
+  summary::Hom(object, console)
+  screeplot::Hom(object, device)
+  biplot::Hom(object ⊗ scalar, device)
+end
+
+base_wf = @program base (d::data, p::list, a::scalar) begin
+  mod = model(d, p)
+  out = print(mod)
+  summ = summary(mod)
+  scree = screeplot(mod)
+  plot = biplot(mod, a)
+  return dollar(mod)
+end
+
+open("Downloads/wf-base-lab.pdf", "w") do k
+    write(k, Catlab.Graphics.Graphviz.run_graphviz(
+        draw_all(add_junctions(base_wf));
+        format = "pdf"
+    ))
+end
+open("Downloads/wf-base.pdf", "w") do k
+    write(k, Catlab.Graphics.Graphviz.run_graphviz(
+        draw_nodes(add_junctions(base_wf));
+        format = "pdf"
+    ))
+end
+
+# {ordr} workflow
+
+@present ordr(FreeSymmetricMonoidalCategory) begin
+    (scalar, list, matrix, data, model, object, console, device)::Ob
+    ordinate::Hom(data ⊗ model ⊗ list, object)
+    get___::Hom(model, matrix)
+    confer::Hom(object ⊗ scalar, object)
+    print::Hom(object, console)
+    tidy::Hom(object, data)
+    glance::Hom(object, data)
+    ggplot::Hom(data, device)
+    ggbiplot::Hom(object, device)
+    layers::Hom(device, device)
+end
+
+ordr_wf = @program ordr (d::data, f::model, p::list, a::scalar) begin
+    ord = ordinate(d, f, p)
+    ord1 = confer(ord, a)
+    out = print(ord1)
+    coord = tidy(ord1)
+    summ = glance(ord1)
+    biplot = ggbiplot(ord1)
+    return get___(ord1), summ, coord, ggplot(coord), layers(biplot)
+end
+
+open("Downloads/wf-ordr-lab.pdf", "w") do k
+    write(k, Catlab.Graphics.Graphviz.run_graphviz(
+        draw_all(add_junctions(ordr_wf));
+        format = "pdf"
+    ))
+end
+open("Downloads/wf-ordr.pdf", "w") do k
+    write(k, Catlab.Graphics.Graphviz.run_graphviz(
+        draw_nodes(add_junctions(ordr_wf));
+        format = "pdf"
+    ))
+end
+
+# `ordinate()`
+
+@present ordinate(FreeSymmetricMonoidalCategory) begin
+    (data, fun, params, obj, U, V, D, pq, supp, meta, ord)::Ob
+    fit::Hom(data ⊗ fun ⊗ params, obj)
+    recover_rows::Hom(obj, U)
+    recover_cols::Hom(obj, V)
+    recover_inertia::Hom(obj, D)
+    recover_conference::Hom(obj, pq)
+    recover_supp__::Hom(obj, supp)
+    recover_aug__::Hom(obj, meta)
+    as_tbl_ord::Hom(obj ⊗ U ⊗ V ⊗ D ⊗ pq ⊗ supp, ord)
+    augment_ord::Hom(ord ⊗ meta, ord)
+    annotate::Hom(data ⊗ ord, ord)
+end
+
+ordinate_wf = @program ordinate (d::data, f::fun, p::params) begin
+    m = fit(d, f, p)
+    r = recover_rows(m)
+    c = recover_cols(m)
+    i = recover_inertia(m)
+    q = recover_conference(m)
+    s = recover_supp__(m)
+    o = as_tbl_ord(m, r, c, i, q, s)
+    a = recover_aug__(m)
+    b = augment_ord(o, a)
+    return annotate(d, b)
+end
+
+open("Downloads/wf-ordinate-lab.pdf", "w") do k
+    write(k, Catlab.Graphics.Graphviz.run_graphviz(
+        draw_all(add_junctions(ordinate_wf));
+        format = "pdf"
+    ))
+end
+open("Downloads/wf-ordinate.pdf", "w") do k
+    write(k, Catlab.Graphics.Graphviz.run_graphviz(
+        draw_nodes(add_junctions(ordinate_wf));
+        format = "pdf"
+    ))
+end

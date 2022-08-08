@@ -1,0 +1,1284 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>{ordr}: Toward Tidy Principles for Matrix-Decomposed Data</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Jason Cory Brunson" />
+    <script src="libs/header-attrs/header-attrs.js"></script>
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/tamu-fonts.css" rel="stylesheet" />
+    <link rel="stylesheet" href="widths.css" type="text/css" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+.title[
+# {ordr}: Toward Tidy Principles for Matrix-Decomposed Data
+]
+.subtitle[
+## <p>New Developments in Graphing Multivariate Data
+Section on Statistical Graphics •
+Joint Statistical Meetings 2022</p>
+]
+.author[
+### Jason Cory Brunson
+]
+.institute[
+### <p>Laboratory for Systems Medicine
+Division of Pulmonary, Critcial Care, and Sleep Medicine •
+University of Florida</p>
+]
+.date[
+### 2022 Aug 8
+]
+
+---
+
+class: center
+
+
+
+&lt;style type="text/css"&gt;
+.remark-code, .remark-inline-code {
+    font-size: 85%;
+    &lt;!--padding: 1em 1em 1em 1em;--&gt;
+}
+&lt;/style&gt;
+
+## Acknowledgments
+
+.pull-left[
+
+### Development
+
+Emily Paul (UPenn)
+
+### Discussion
+
+Joyce Robbins (Columbia)
+
+### Applications
+
+Tom Agresta (UConn)&lt;br&gt;
+Ritchie Vaughan (UVA)&lt;br&gt;
+Martinna Bertolini (UFRJ)&lt;br&gt;
+Carol Mathews (UF)
+
+]
+
+.pull-right[
+
+### Land
+
+Potano tribe `\(\subset\)` Timucua people
+
+### Resources
+
+![:scale 30%](img/uconn-health-wordmark-stacked-blue.png) &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; ![:scale 15%](img/Vertical_Logo-RGB_Raster-ORANGE.png)
+
+### Slideshow
+
+**remark.js** (Ole Petter Bang) + **xaringan** (Yihui Xie)&lt;br&gt;
+**Catlab.jl** (Evan Patterson &amp;al)&lt;br&gt;
+Flaticon.com
+
+]
+
+---
+class: inverse, center, middle
+
+# Prerequisites
+
+---
+
+## Singular value decomposition
+
+1. Data matrix `\(X_{n \times p} \in \mathbb{R}^{n \times p}\)`
+
+2. SVD into **inertia** and rotation matrices of left and right **singular vectors**:
+`$$X = U_{n \times k}\ D_{k \times k}\ {V_{p \times k}}^\top$$`
+
+3. Low-dimensional approximation via first `\(r\)` **ordinates**:
+`$$X \approx U_r\ D_r\ {V_r}^\top$$`
+
+.center[
+![:scale 50%](img/SVD.jpg)
+]
+
+---
+
+## Biplots
+
+**Principal coordinates** `\(F = UD\)` or `\(G = VD\)` approximate the geometry of the rows or columns of `\(X\)`:
+
+* Distances `\(\lVert f_{j\ \bullet} - f_{i\ \bullet} \rVert\)` approximate distances `\(\sqrt{(x_{j\ 1} - x_{i\ 1})^2 + \cdots + (x_{j\ p} - x_{i\ p})^2}\)`
+* Inner products `\(\frac{1}{n}\ g_{i\ \bullet}\cdot g_{j\ \bullet}\)` approximate covariances `\(\operatorname{cov}(x_{\bullet\ i},x_{\bullet\ j})\)`
+  * Cosines `\(\cos(\arg(g_{i\ \bullet},g_{j\ \bullet}))\)` approximate correlations `\(\operatorname{cor}(x_{\bullet\ i},x_{\bullet\ j})\)`
+
+**Standard coordinates** `\(U\)` or `\(V\)` pair with principal coordinates to recover the values of `\(X\)`:
+
+* Inner products `\(f_{i\ \bullet}\cdot v_{j\ \bullet}\)` and `\(u_{i\ \bullet}\cdot g_{j\ \bullet}\)` approximate entries `\(x_{ij}\)`
+
+**Biplots** superimpose row and column coordinates with shares `\((a,b)\)` of inertia:
+`$$\left[\begin{array}{c} U\ D^a \\ V\ D^b \end{array}\right] \in \mathbb{R}^{(n + p) \times r}$$`
+
+--
+
+Pick (at most) **two out of three**:
+
+1. Approximate row geometry &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; 2. Approximate column geometry &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp; 3. Approximate measured values
+
+---
+class: inverse, center, middle
+
+# Pitch: Principal components analysis
+
+---
+
+## PCA of Anderson's iris data
+
+.pull-left.w45[
+
+.center[
+![:scale 70%](img/anderson1936-fig8.jpg)
+]
+
+]
+
+.pull-right.w55[
+
+
+```r
+head(iris)
+```
+
+```
+##   Sepal.Length Sepal.Width Petal.Length Petal.Width Species
+## 1          5.1         3.5          1.4         0.2  setosa
+## 2          4.9         3.0          1.4         0.2  setosa
+## 3          4.7         3.2          1.3         0.2  setosa
+## 4          4.6         3.1          1.5         0.2  setosa
+## 5          5.0         3.6          1.4         0.2  setosa
+## 6          5.4         3.9          1.7         0.4  setosa
+```
+
+```r
+summary(iris)
+```
+
+```
+##   Sepal.Length    Sepal.Width     Petal.Length    Petal.Width   
+##  Min.   :4.300   Min.   :2.000   Min.   :1.000   Min.   :0.100  
+##  1st Qu.:5.100   1st Qu.:2.800   1st Qu.:1.600   1st Qu.:0.300  
+##  Median :5.800   Median :3.000   Median :4.350   Median :1.300  
+##  Mean   :5.843   Mean   :3.057   Mean   :3.758   Mean   :1.199  
+##  3rd Qu.:6.400   3rd Qu.:3.300   3rd Qu.:5.100   3rd Qu.:1.800  
+##  Max.   :7.900   Max.   :4.400   Max.   :6.900   Max.   :2.500  
+##        Species  
+##  setosa    :50  
+##  versicolor:50  
+##  virginica :50  
+##                 
+##                 
+## 
+```
+
+]
+
+---
+
+## PCA of Anderson's iris data
+
+.pull-left[
+
+
+```r
+(pca &lt;- prcomp(iris[, 1:4]))
+```
+
+```
+## Standard deviations (1, .., p=4):
+## [1] 2.0562689 0.4926162 0.2796596 0.1543862
+## 
+## Rotation (n x k) = (4 x 4):
+##                      PC1         PC2         PC3        PC4
+## Sepal.Length  0.36138659 -0.65658877  0.58202985  0.3154872
+## Sepal.Width  -0.08452251 -0.73016143 -0.59791083 -0.3197231
+## Petal.Length  0.85667061  0.17337266 -0.07623608 -0.4798390
+## Petal.Width   0.35828920  0.07548102 -0.54583143  0.7536574
+```
+
+]
+
+.pull-right[
+
+
+```r
+(pca_ord &lt;- ordinate(iris, prcomp, cols = 1:4))
+```
+
+```
+## # A tbl_ord of class 'prcomp': (150 x 4) x (4 x 4)'
+## # 4 coordinates: PC1, PC2, ..., PC4
+## # 
+## # Rows (principal): [ 150 x 4 | 1 ]
+##     PC1    PC2     PC3 ... |   Species
+##                            |   &lt;fct&gt;  
+## 1 -2.68 -0.319  0.0279     | 1 setosa 
+## 2 -2.71  0.177  0.210  ... | 2 setosa 
+## 3 -2.89  0.145 -0.0179     | 3 setosa 
+## 4 -2.75  0.318 -0.0316     | 4 setosa 
+## 5 -2.73 -0.327 -0.0901     | 5 setosa 
+## # … with 145 more rows
+## # ℹ Use `print(n = ...)` to see more rows
+## # 
+## # Columns (standard): [ 4 x 4 | 2 ]
+##       PC1     PC2     PC3 ... |   .name        .center
+##                               |   &lt;chr&gt;          &lt;dbl&gt;
+## 1  0.361  -0.657   0.582      | 1 Sepal.Length    5.84
+## 2 -0.0845 -0.730  -0.598  ... | 2 Sepal.Width     3.06
+## 3  0.857   0.173  -0.0762     | 3 Petal.Length    3.76
+## 4  0.358   0.0755 -0.546      | 4 Petal.Width     1.20
+```
+
+]
+
+---
+
+## PCA of Anderson's iris data
+
+.pull-left[
+
+
+```r
+summary(pca)
+```
+
+```
+## Importance of components:
+##                           PC1     PC2    PC3     PC4
+## Standard deviation     2.0563 0.49262 0.2797 0.15439
+## Proportion of Variance 0.9246 0.05307 0.0171 0.00521
+## Cumulative Proportion  0.9246 0.97769 0.9948 1.00000
+```
+
+```r
+screeplot(pca, type = "lines")
+```
+
+![](tidy-factor-x_files/figure-html/unnamed-chunk-4-1.png)&lt;!-- --&gt;
+
+]
+
+.pull-right[
+
+
+```r
+tidy(pca_ord) %T&gt;% print() %&gt;%
+  ggplot(aes(x = .name, y = .inertia, group = 1)) +
+  geom_line() + geom_point()
+```
+
+```
+## # A tibble: 4 × 4
+##   .name .sdev .inertia .prop_var
+##   &lt;fct&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 PC1   2.06    630.     0.925  
+## 2 PC2   0.493    36.2    0.0531 
+## 3 PC3   0.280    11.7    0.0171 
+## 4 PC4   0.154     3.55   0.00521
+```
+
+![](tidy-factor-x_files/figure-html/unnamed-chunk-5-1.png)&lt;!-- --&gt;
+
+]
+
+---
+
+## PCA of Anderson's iris data
+
+.pull-left[
+
+
+```r
+biplot(pca, scale = 0, col = c("darkgrey", "forestgreen"),
+       main = "PCA of Anderson's iris data")
+```
+
+![](tidy-factor-x_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
+
+]
+
+.pull-right[
+
+
+```r
+pca_ord %&gt;% confer_inertia("rows") %&gt;%
+  ggbiplot(aes(label = .name),
+           sec.axes = "cols", scale.factor = 4) +
+  geom_rows_point(aes(color = Species)) +
+  geom_cols_vector() + geom_cols_text_radiate() +
+  expand_limits(x = c(NA, 4.5), y = c(-4, NA)) +
+  ggtitle("PCA of Anderson's iris data")
+```
+
+![](tidy-factor-x_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+
+]
+
+---
+class: inverse, center, middle
+
+# Motivation
+
+---
+
+## Ordination
+
+.pull-left[
+
+&lt;br&gt;
+
+&gt; "[A]ny technique that extracts artificial variables in order to reduce the dimensionality of the data is referred to as **ordination**."&lt;sup&gt;1&lt;/sup&gt;
+
+&lt;br&gt;
+
+![](img/data-model-table.jpg)
+
+]
+
+.pull-right[
+
+![:scale 90%](img/podani-fig0-1-crop.jpg)
+
+]
+
+---
+
+## Statement of need
+
+.pull-left[
+
+R is replete with ordination methods!
+
+![:scale 75.58%](img/ctv-multivar.png)
+![:scale 100%](img/ctv-ecoenv.png)
+
+... but they are
+
+* **specialized**: unweildy or unintuitive inspection
+* **heterogeneous**: diverse, dissimilar conventions
+* **standalone**: not designed to be interoperable
+
+]
+
+--
+
+.pull-right[
+
+The tidyverse strives to be
+
+* **human-centered**: supports data analysis conducted by humans
+* **consistent**: ensures that learning transfers between packages
+* **composable**: enables modular data exploration and study design
+* **inclusive**: is developed and informed by a broad community of users
+
+.center[
+![:scale 20%](img/tidyverse-logo.png)
+]
+
+]
+
+---
+
+## Statement of purpose
+
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+
+_The {**ordr**} package leverages a **unifying framework** for matrix decomposition models and the **philosophy**, **conventions**, and **popularity** of the tidyverse in order to more **naturally** and **efficiently** integrate ordination analyses into **common** data science workflows._
+
+---
+class: inverse, center, middle
+
+# Pitch: Correspondence analysis
+
+---
+
+## CA of Snee's hair and eye color data
+
+.pull-left.w50[
+
+.center[
+![:scale 70%](img/snee1974-tab3.jpg)
+]
+
+]
+
+.pull-right.w50[
+
+
+```r
+(haireye &lt;- as.data.frame(rowSums(HairEyeColor, dims = 2L)))
+```
+
+```
+##       Brown Blue Hazel Green
+## Black    68   20    15     5
+## Brown   119   84    54    29
+## Red      26   17    14    14
+## Blond     7   94    10    16
+```
+
+```r
+summary(HairEyeColor)
+```
+
+```
+## Number of cases in table: 592 
+## Number of factors: 3 
+## Test for independence of all factors:
+## 	Chisq = 164.92, df = 24, p-value = 5.321e-23
+## 	Chi-squared approximation may be incorrect
+```
+
+]
+
+---
+
+## CA of Snee's hair and eye color data
+
+.pull-left[
+
+
+```r
+(ca &lt;- MASS::corresp(haireye, nf = 2L))
+```
+
+```
+## First canonical correlation(s): 0.4569165 0.1490859 
+## 
+##  Row scores:
+##             [,1]       [,2]
+## Black -1.1042772  1.4409170
+## Brown -0.3244635 -0.2191109
+## Red   -0.2834725 -2.1440145
+## Blond  1.8282287  0.4667063
+## 
+##  Column scores:
+##             [,1]       [,2]
+## Brown -1.0771283  0.5924202
+## Blue   1.1980612  0.5564193
+## Hazel -0.4652862 -1.1227826
+## Green  0.3540108 -2.2741218
+```
+
+]
+
+.pull-right[
+
+
+```r
+(ca_ord &lt;- ordinate(haireye,
+                    model = MASS::corresp, nf = 2L))
+```
+
+```
+## # A tbl_ord of class 'correspondence': (4 x 2) x (4 x 2)'
+## # 2 coordinates: Can1 and Can2
+## # 
+## # Rows (standard): [ 4 x 2 | 1 ]
+##     Can1   Can2 |   .name
+##                 |   &lt;chr&gt;
+## 1 -1.10   1.44  | 1 Black
+## 2 -0.324 -0.219 | 2 Brown
+## 3 -0.283 -2.14  | 3 Red  
+## 4  1.83   0.467 | 4 Blond
+## # 
+## # Columns (standard): [ 4 x 2 | 1 ]
+##     Can1   Can2 |   .name
+##                 |   &lt;chr&gt;
+## 1 -1.08   0.592 | 1 Brown
+## 2  1.20   0.556 | 2 Blue 
+## 3 -0.465 -1.12  | 3 Hazel
+## 4  0.354 -2.27  | 4 Green
+```
+
+]
+
+---
+
+## CA of Snee's hair and eye color data
+
+.pull-left[
+
+
+```r
+summary(ca)
+```
+
+```
+##        Length Class  Mode   
+## cor     2     -none- numeric
+## rscore  8     -none- numeric
+## cscore  8     -none- numeric
+## Freq   16     -none- numeric
+```
+
+```r
+barplot(ca$cor^2,
+        xlab = "Canonical dimension", ylab = "Variance")
+```
+
+![](tidy-factor-x_files/figure-html/unnamed-chunk-11-1.png)&lt;!-- --&gt;
+
+]
+
+.pull-right[
+
+
+```r
+tidy(ca_ord) %T&gt;% print() %&gt;%
+  ggplot(aes(x = .name, y = .cor^2)) +
+  geom_col() +
+  labs(x = "Canonical dimension", y = "Variance")
+```
+
+```
+## # A tibble: 2 × 4
+##   .name  .cor .inertia .prop_var
+##   &lt;fct&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+## 1 Can1  0.457   0.209     0.904 
+## 2 Can2  0.149   0.0222    0.0962
+```
+
+![](tidy-factor-x_files/figure-html/unnamed-chunk-12-1.png)&lt;!-- --&gt;
+
+]
+
+---
+
+## CA of Snee's hair and eye color data
+
+.pull-left[
+
+
+```r
+biplot(ca, type = "symmetric",
+       col = c("#377eb8", "#e41a1c"),
+       main = "CA of Snee's hair and eye color data")
+```
+
+![](tidy-factor-x_files/figure-html/unnamed-chunk-13-1.png)&lt;!-- --&gt;
+
+]
+
+.pull-right[
+
+
+```r
+ca_ord %&gt;% confer_inertia("symmetric") %&gt;%
+  ggbiplot(aes(label = .name, color = .matrix)) +
+  scale_color_brewer(type = "qual", palette = "Set1") +
+  theme_biplot() + geom_origin() +
+  geom_rows_text() + geom_cols_text() +
+  ggtitle("CA of Snee's hair and eye color data")
+```
+
+![](tidy-factor-x_files/figure-html/unnamed-chunk-14-1.png)&lt;!-- --&gt;
+
+]
+
+---
+class: inverse, center, middle
+
+# Design
+
+---
+
+## Principles
+
+{ordr} strives for a coherent grammar&lt;sup&gt;2&lt;/sup&gt; that is
+
+.pull-left.w08[
+
+![:scale 100%](img/icon-compass.jpg)
+
+]
+
+.pull-right.w90[
+
+**accessible**
+- easy to learn and straightforward to advance
+- couples easily with other data science tools
+
+]
+
+.pull-left.w08[
+
+![:scale 100%](img/icon-prohibition.jpg)
+
+]
+
+.pull-right.w90[
+
+**opinionated**
+- foregrounds the unity of supported techniques
+- rewards good practice, relieves choice paralysis
+
+]
+
+.pull-left.w08[
+
+![:scale 100%](img/icon-graph.jpg)
+
+]
+
+.pull-right.w90[
+
+**extensible**
+- relies on a small set of core generics
+- borrows conventions from widely-used tools
+
+]
+
+---
+
+## Inspiration
+
+A general approach to ordination techniques:&lt;sup&gt;3&lt;/sup&gt;
+
+1. **Preprocess data** (centering; double-centering): `\(\displaystyle X \rightsquigarrow Y\)`
+
+2. **Generalized SVD** (weights; sphering):
+`$$Y = (\Omega^{-1/2}\ U)\ D\ (\Phi^{-1/2}\ V)^\top$$`
+.center[
+![:scale 75%](img/GSVD.jpg)
+]
+
+3. **Biplot**, with `\(a + b = 1\)` (row-principal; column-principal; symmetric):
+`$$F = \Omega^{-1/2}\ U\ D^a,\ \ \ \ G = \Phi^{-1/2}\ V\ D^b$$`
+
+---
+
+## Core generics
+
+.pull-left[
+
+### Engine
+
+For each supported model class, **recover**:
+
+* left &amp; right matrix factors (singular vectors)
+`$$U,\ \ V$$`
+
+* inertia and its distribution unto the factors
+`$$D = \operatorname{diag}(d_1,\ldots,d_k),\ \ (a,b)$$`
+
+* supplementary elements
+`$$U\ D = X\ V,\ \ X'\ V,\ \ \text{etc.}$$`
+
+* metadata about model components
+
+]
+
+--
+
+.pull-right[
+
+### Dashboard
+
+Via the wrapper class `'tbl_ord'`, **enable**:&lt;sup&gt;4&lt;/sup&gt;
+
+* clear &amp; consistent formatting via {**tibble**}
+
+* re-distribution of inertia
+
+* negations of axes
+
+* annotation of components via {**dplyr**}
+
+* summaries for further analysis via {**broom**}
+
+* grammatical construction of biplots via {**ggplot2**}
+
+* workflows via {**magrittr**} (or `|&gt;` if one must)
+
+]
+
+---
+
+## Base R workflow
+
+.center[
+![:scale 63%](img/wf-base.jpg)
+]
+
+.pull-left.w50[
+
+**Limitations**
+
+* idiosyncratic fit function and output class
+
+* retrievable model components are nonstandard
+
+]
+
+.pull-right.w50[
+
+&lt;br&gt;
+
+* model summaries often have no class or methods
+
+* (bi)plots offer limited customization and annotation
+
+]
+
+---
+
+## {ordr} workflow: Dashboard
+
+.center[
+![:scale 90%](img/wf-ordr.jpg)
+]
+
+.pull-left.w50[
+
+**Differences**
+
+* unified fit function and modifiable wrapper class
+
+* retrieval methods for standard components
+
+]
+
+.pull-right.w50[
+
+&lt;br&gt;
+
+* model summaries are returned as data frames
+
+* biplots can be layered
+
+]
+
+---
+
+## {ordr} workflow: Engine
+
+.center[
+![:scale 100%](img/wf-ordinate-box.jpg)
+]
+
+.pull-left.w50[
+
+**Wrapper** `'tbl_ord'`
+
+* connects underlying models to unified functions&lt;br&gt; by way of recovery methods
+
+]
+
+.pull-right.w50[
+
+**Decorator** `augment_ord()`
+
+* annotates recovered model components&lt;br&gt; with recovered metadata
+
+]
+
+---
+class: inverse, center, middle
+
+# Gallery
+
+---
+
+## Gallery: Multiple correspondence analysis of university admissions data
+
+.pull-left[
+
+
+```r
+ca::mjca(UCBAdmissions) %&gt;%
+  as_tbl_ord() %&gt;% augment_ord() %&gt;%
+  print() -&gt; admissions_mca
+```
+
+```
+## # A tbl_ord of class 'mjca': (4526 x 2) x (10 x 2)'
+## # 2 coordinates: Dim1 and Dim2
+## # 
+## # Rows (standard): [ 4526 x 2 | 4 ]
+##    Dim1  Dim2 |   .name    .mass   .dist
+##               |   &lt;chr&gt;    &lt;dbl&gt;   &lt;dbl&gt;
+## 1  3.33  2.68 | 1 1     0.000221 0.00672
+## 2  3.33  2.68 | 2 2     0.000221 0.00672
+## 3  3.33  2.68 | 3 3     0.000221 0.00672
+## 4  3.33  2.68 | 4 4     0.000221 0.00672
+## 5  3.33  2.68 | 5 5     0.000221 0.00672
+## # … with 4,521 more rows, and
+## #   1 more variable:
+## #   .inertia &lt;dbl&gt;
+## # ℹ Use `print(n = ...)` to see more rows, and `colnames()` to see all variable names
+## # 
+## # Columns (standard): [ 10 x 2 | 6 ]
+##      Dim1    Dim2 |    .name .factor .level  .mass
+##                   |    &lt;chr&gt; &lt;chr&gt;   &lt;chr&gt;   &lt;dbl&gt;
+##  1  1.08   0.975  |  1 Admi… Admit   Admit… 0.129 
+##  2 -0.681 -0.617  |  2 Admi… Admit   Rejec… 0.204 
+##  3 -1.18   0.786  |  3 Gend… Gender  Female 0.135 
+##  4  0.802 -0.536  |  4 Gend… Gender  Male   0.198 
+##  5  1.51   0.167  |  5 Dept… Dept    A      0.0687
+##  6  1.69  -0.596  |  6 Dept… Dept    B      0.0431
+##  7 -0.797  1.72   |  7 Dept… Dept    C      0.0676
+##  8 -0.323  0.0886 |  8 Dept… Dept    D      0.0583
+##  9 -1.13   0.908  |  9 Dept… Dept    E      0.0430
+## 10 -1.05  -2.78   | 10 Dept… Dept    F      0.0526
+## # … with 2 more variables:
+## #   .dist &lt;dbl&gt;,
+## #   .inertia &lt;dbl&gt;
+## # ℹ Use `colnames()` to see all variable names
+```
+
+]
+
+.pull-right[
+
+
+```r
+admissions_mca %&gt;%
+  confer_inertia("colprincipal") %&gt;%
+  ggbiplot() + theme_biplot() + geom_origin() +
+  geom_cols_point(aes(color = .factor, shape = .factor,
+                      size = .mass)) +
+  geom_cols_text_repel(aes(label = .level, color = .factor),
+                       show.legend = FALSE) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_size_area(guide = "none") +
+  labs(color = "Factor level", shape = "Factor level") +
+  ggtitle("MCA of university admissions data",
+          "stratified by gender, program, and outcome")
+```
+
+![](tidy-factor-x_files/figure-html/admissions mjca plot-1.png)&lt;!-- --&gt;
+
+]
+
+---
+
+## Gallery: NIPALS of (incomplete) air quality data
+
+.pull-left[
+
+
+```r
+ordinate(airquality, seq(4L), ade4::nipals, nf = 3L) %&gt;%
+  mutate_rows(
+    Month = factor(month.abb[Month], levels = month.abb),
+    Missingness = apply(is.na(airquality[, 1:4]), 1L, any)
+  ) %&gt;%
+  print() -&gt; airqual_nipals
+```
+
+```
+## # A tbl_ord of class 'nipals': (153 x 3) x (4 x 3)'
+## # 3 coordinates: Fac1, Fac2, Fac3
+## # 
+## # Rows (principal): [ 153 x 3 | 4 ]
+##     Fac1    Fac2   Fac3 |   .name Month   Day Missingn…¹
+##                         |   &lt;chr&gt; &lt;fct&gt; &lt;int&gt; &lt;lgl&gt;     
+## 1 -0.305  0.334  -1.25  | 1 1     May       1 FALSE     
+## 2 -0.426  0.930  -0.501 | 2 2     May       2 FALSE     
+## 3 -1.27  -0.0592  0.279 | 3 3     May       3 FALSE     
+## 4 -1.16  -1.46   -1.44  | 4 4     May       4 FALSE     
+## 5 -3.41   0.906  -0.280 | 5 5     May       5 TRUE      
+## # … with 148 more rows, and
+## #   abbreviated variable name
+## #   ¹​Missingness
+## # ℹ Use `print(n = ...)` to see more rows
+## # 
+## # Columns (standard): [ 4 x 3 | 1 ]
+##     Fac1    Fac2   Fac3 |   .name  
+##                         |   &lt;chr&gt;  
+## 1  0.582  0.0175  0.104 | 1 Ozone  
+## 2  0.312 -0.867  -0.374 | 2 Solar.R
+## 3 -0.491 -0.497   0.623 | 3 Wind   
+## 4  0.569 -0.0173  0.679 | 4 Temp
+```
+
+]
+
+.pull-right[
+
+
+```r
+airqual_nipals %&gt;%
+  ggbiplot() + theme_biplot() + geom_origin() +
+  stat_rows_ellipse(aes(color = Month)) +
+  geom_rows_point(aes(color = Month), size = 1, alpha = .5) +
+  geom_rows_point(aes(shape = Missingness), size = 3) +
+  scale_shape_manual(values = c(`TRUE` = 1L, `FALSE` = NA)) +
+  ggtitle("PCA of 1973 air quality measurements")
+```
+
+![](tidy-factor-x_files/figure-html/nipals plot-1.png)&lt;!-- --&gt;
+
+]
+
+---
+
+## Gallery: Canonical correlation analysis of psychiatric inventories
+
+
+
+.pull-left[
+
+
+```r
+cca_ord &lt;- cancor_ord(pred, resp, scores = TRUE)
+(cca_ord &lt;- augment_ord(as_tbl_ord(cca_ord)))
+```
+
+```
+## # A tbl_ord of class 'cancor_ord': (322 x 3) x (324 x 3)'
+## # 3 coordinates: CanCor1, CanCor2, CanCor3
+## # 
+## # Rows (standard): [ 322 x 3 | 3 ]
+##    CanCor1   CanCor2   CanCor3 |   .name      .center .element
+##                                |   &lt;chr&gt;        &lt;dbl&gt; &lt;chr&gt;   
+## 1  0.00146 -0.00494  -0.00306  | 1 Anxiety       18.9 active  
+## 2  0.00264  0.00507  -0.000169 | 2 Depression    20.7 active  
+## 3  0.00143 -0.000979  0.00371  | 3 ADHD          38.0 active  
+## 4 -0.0307   0.00214   0.0151   | 4 &lt;NA&gt;          NA   score   
+## 5  0.0263   0.148    -0.0476   | 5 &lt;NA&gt;          NA   score   
+## # … with 317 more rows
+## # ℹ Use `print(n = ...)` to see more rows
+## # 
+## # Columns (standard): [ 324 x 3 | 3 ]
+##     CanCor1   CanCor2  CanCor3 |   .name .center .element
+##                                |   &lt;chr&gt;   &lt;dbl&gt; &lt;chr&gt;   
+## 1 -0.000433 -0.00240  -0.00560 | 1 SI-R    65.4  active  
+## 2  0.0208   -0.0303   -0.0176  | 2 ADL-H    2.13 active  
+## 3  0.00154  -0.000812  0.00120 | 3 SCI    100.   active  
+## 4  0.00247   0.0136    0.00318 | 4 UHSS    30.0  active  
+## 5 -0.0510   -0.169    -0.0889  | 5 1       NA    score   
+## # … with 319 more rows
+## # ℹ Use `print(n = ...)` to see more rows
+```
+
+]
+
+.pull-right[
+
+
+```r
+cca_ord %&gt;% confer_inertia("rows") %&gt;%
+  ggbiplot(aes(label = .name, color = .matrix)) +
+  geom_unit_circle() +
+  geom_rows_vector(elements = "structure", arrow = NULL) +
+  geom_cols_vector(elements = "structure", arrow = NULL) +
+  geom_rows_text(elements = "structure", hjust = "outward") +
+  geom_cols_text(elements = "structure", hjust = "outward") +
+  expand_limits(x = c(-1, 1), y = c(-1, 1)) +
+  ggtitle("Str. correlations of psychiatric inventories")
+```
+
+![](tidy-factor-x_files/figure-html/cca-1.png)&lt;!-- --&gt;
+
+]
+
+---
+
+## Gallery: Linear discriminant analysis of diabetes data
+
+.pull-left[
+
+
+```r
+MASS::lda(group ~ ., heplots::Diabetes) %&gt;%
+  as_tbl_ord() %&gt;% augment_ord() %&gt;%
+  mutate_rows(discriminant = ifelse(
+    .element == "active", "centroid", "case"
+  )) %&gt;%
+  print() -&gt; diabetes_lda
+```
+
+```
+## # A tbl_ord of class 'lda': (148 x 2) x (5 x 2)'
+## # 2 coordinates: LD1 and LD2
+## # 
+## # Rows (principal): [ 148 x 2 | 6 ]
+##      LD1    LD2 |   .name .prior .counts .grou…¹
+##                 |   &lt;chr&gt;  &lt;dbl&gt;   &lt;int&gt; &lt;chr&gt;  
+## 1 -1.75   0.400 | 1 Norm…  0.524      76 Normal 
+## 2  0.340 -1.38  | 2 Chem…  0.248      36 Chemic…
+## 3  3.66   0.580 | 3 Over…  0.228      33 Overt_…
+## 4 -1.72   0.663 | 4 1     NA          NA Normal 
+## 5 -2.85   1.30  | 5 2     NA          NA Normal 
+## # … with 143 more rows, 2
+## #   more variables:
+## #   .element &lt;chr&gt;,
+## #   discriminant &lt;chr&gt;, and
+## #   abbreviated variable name
+## #   ¹​.grouping
+## # ℹ Use `print(n = ...)` to see more rows, and `colnames()` to see all variable names
+## # 
+## # Columns (standard): [ 5 x 2 | 2 ]
+##         LD1      LD2 |   .name   .element
+##                      |   &lt;chr&gt;   &lt;chr&gt;   
+## 1  1.36     -3.78    | 1 relwt   active  
+## 2 -0.0336    0.0366  | 2 glufast active  
+## 3  0.0126   -0.00709 | 3 glutest active  
+## 4 -0.000102 -0.00617 | 4 instest active  
+## 5  0.00424   0.00113 | 5 sspg    active
+```
+
+]
+
+.pull-right[
+
+
+```r
+diabetes_lda %&gt;% confer_inertia(1) %&gt;%
+  ggbiplot() + theme_biplot() +
+  geom_rows_point(aes(shape = .grouping, size = discriminant),
+                  alpha = .5) +
+  geom_cols_axis(aes(label = .name),
+                 color = "#888888", num = 8L,
+                 text_size = 2.5, label_dodge = .02) +
+  ggtitle("Standardized LDA of diabetes groups")
+```
+
+![](tidy-factor-x_files/figure-html/diabetes lda plot-1.png)&lt;!-- --&gt;
+
+]
+
+---
+class: inverse, center, middle
+
+# Wrap
+
+---
+
+## Needs
+
+.pull-left.w08[
+
+![:scale 100%](img/icon-bug.png)
+
+]
+
+.pull-right.w90[
+
+**Engagement**
+
+* bug &amp; need reports
+
+* use cases
+
+* code contributions
+
+]
+
+.pull-left.w08[
+
+![:scale 100%](img/icon-guide.png)
+
+]
+
+.pull-right.w90[
+
+**Documentation**
+
+* how to use {ordr} with **new model classes**
+
+* how to use **new plot layers** with `ggbiplot()`
+
+]
+
+.pull-left.w08[
+
+![:scale 100%](img/icon-gear.png)
+
+]
+
+.pull-right.w90[
+
+**Features**
+
+* quality measures
+
+* predictive biplots&lt;sup&gt;5&lt;/sup&gt;
+
+]
+
+---
+
+## Welcome
+
+Install **ordr**, and optionally methods for additional S3 classes:
+
+```r
+remotes::install_github("corybrunson/ordr")
+remotes::install_github("corybrunson/ordr.extra")
+```
+
+## Thank you!
+
+.footnote[
+
+[1] Podani J • 2000 • _Introduction to the Exploration of Multivariate Biological Data_ • &lt;http://ramet.elte.hu/~podani/books.html&gt;
+
+[2] Wilkinson L • 2005 • _The Grammar of Graphics_ • &lt;https://link.springer.com/book/10.1007/0-387-28695-0&gt;
+
+[3] Greenacre M • 1984 • _Theory and applications of correspondence analysis_ • &lt;http://www.carme-n.org/&gt;
+
+[4] Pedersen TL • 2022 • {tidygraph}: A Tidy API for Graph Manipulation • &lt;https://CRAN.R-project.org/package=tidygraph&gt;
+
+[5] Gower JC, Lubbe SG, le Roux NJ • 2011 • _Understanding Biplots_ • &lt;https://www.wiley.com/go/biplots&gt;
+
+]
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="libs/remark-latest.min.js"></script>
+<script src="macros.js"></script>
+<script>var slideshow = remark.create({
+"ratio": "16:9",
+"click": true,
+"includePresenterNotes": false,
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+// add `data-at-shortcutkeys` attribute to <body> to resolve conflicts with JAWS
+// screen reader (see PR #262)
+(function(d) {
+  let res = {};
+  d.querySelectorAll('.remark-help-content table tr').forEach(tr => {
+    const t = tr.querySelector('td:nth-child(2)').innerText;
+    tr.querySelectorAll('td:first-child .key').forEach(key => {
+      const k = key.innerText;
+      if (/^[a-z]$/.test(k)) res[k] = t;  // must be a single letter (key)
+    });
+  });
+  d.body.setAttribute('data-at-shortcutkeys', JSON.stringify(res));
+})(document);
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();
+// adds .remark-code-has-line-highlighted class to <pre> parent elements
+// of code chunks containing highlighted lines with class .remark-code-line-highlighted
+(function(d) {
+  const hlines = d.querySelectorAll('.remark-code-line-highlighted');
+  const preParents = [];
+  const findPreParent = function(line, p = 0) {
+    if (p > 1) return null; // traverse up no further than grandparent
+    const el = line.parentElement;
+    return el.tagName === "PRE" ? el : findPreParent(el, ++p);
+  };
+
+  for (let line of hlines) {
+    let pre = findPreParent(line);
+    if (pre && !preParents.includes(pre)) preParents.push(pre);
+  }
+  preParents.forEach(p => p.classList.add("remark-code-has-line-highlighted"));
+})(document);</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
